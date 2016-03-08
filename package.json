@@ -1,0 +1,40 @@
+{
+  "author": {
+    "name": "Hank"
+  },
+  "config": {
+    "appname": "simple-fileservice"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.2.33",
+    "co-nextware": "^1.0.1",
+    "express": "^4.13.4",
+    "lwip": "0.0.8",
+    "multer": "^1.1.0",
+    "node-mime": "^1.0.0"
+  },
+  "description": "file upload server",
+  "devDependencies": {},
+  "keywords": [
+    "aws"
+  ],
+  "license": "ISC",
+  "main": "index.js",
+  "maintainers": [
+    {
+      "name": "hankchiu",
+      "email": "hankchiu.tw@gmail.com"
+    }
+  ],
+  "name": "simple-fileservice",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:hankchiutw/simple-fileservice.git"
+  },
+  "scripts": {
+    "test": "NODE_PATH=. mocha --recursive app/**/*.spec.js",
+    "doc": "jsdoc -c jsdoc.json",
+    "example": "node example/app.js"
+  },
+  "version": "0.9.0"
+}
