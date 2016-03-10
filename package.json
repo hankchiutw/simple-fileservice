@@ -9,12 +9,15 @@
     "aws-sdk": "^2.2.33",
     "co-nextware": "^1.0.1",
     "express": "^4.13.4",
+    "file-type": "^3.8.0",
     "lwip": "0.0.8",
     "multer": "^1.1.0",
     "node-mime": "^1.0.0"
   },
   "description": "file upload server",
-  "devDependencies": {},
+  "devDependencies": {
+    "chai": "^3.5.0"
+  },
   "keywords": [
     "aws"
   ],

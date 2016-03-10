@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const lwip = require('lwip');
+const fileType = require('file-type');
 
 /**
  * File class with few image processing functions
@@ -22,8 +23,21 @@ class FileModel {
      * @param {String} file.url
      */
     constructor(file){
+        if(!file) throw new Error('Empty params');
+        if(!file.path) throw new Error('Empty path');
+        if(!file.filename) throw new Error('Empty filename');
+
+        // dismiss trailing slash
+        if(file.path.endsWith('/')) file.path = file.path.slice(0, -1);
+
+        this.path = file.path;
+        this.filename = file.filename;
+        this.mimeType = this.constructor.mimeType(`${file.path}/${file.filename}`);
+
         /** inherit from static config if not set */
-        this.config = Object.assign( {}, this.constructor.config);
+        Object.defineProperty(this, 'config', {
+            value: Object.assign( {}, this.constructor.config)
+        });
 
         this.obj = file;
 
@@ -82,24 +96,24 @@ class FileModel {
     /**
      * Create a file instance
      * @param {Object} params
+     * @param {String} params.path
+     * @param {String} params.filename
      * @return {FileModel} A FileModel instance
      */
     static create(params){
-        let file = {};
-        [
-            "path",
-            "filename",
-            "mimeType",
-            "type",
-            "destination",
-            "width",
-            "height",
-            "size",
-            "url"
-        ].forEach(attr => file[attr] = params[attr]);
-        return new this(file);
+        return new this(params);
     }
 
+    /**
+     * Read file mime type from its buffer
+     * @param {String} fullpath Full path of the file
+     * @return {String} The [MIME](https://en.wikipedia.org/wiki/Media_type) type. ex. text/plain
+     */
+    static mimeType(fullpath){
+        let buf = new Buffer(262);
+        const bytes = fs.readSync( fs.openSync(fullpath, 'r'), buf, 0, 262, 0);
+        return fileType(buf).mime;
+    }
 
 }
 
