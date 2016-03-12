@@ -7,6 +7,8 @@ const FileModel = require('../models/FileModel');
 const AWS = require("aws-sdk");
 const s3 = new AWS.S3();
 
+const CONFIG_FIELDS = ['s3Bucket', 'thumbWidth', 'maxFileSize', 'uploadDir'];
+
 /**
  * A simple service class communicated to AWS S3
  */
@@ -21,16 +23,38 @@ class FileService {
      * @param {String} config.uploadDir Where the temporary file stored
      */
     constructor(config){
-        this.config = config || {
-            s3Bucket: 'file-bucket-01',
-            thumbWidth: 300,
-            maxFileSize: 20*1024*1024,   // upload limits, bytes
-            uploadDir: '/tmp'
-        };
+        // build _config object
+        Object.defineProperty(this, '_config', {
+            value: Object.assign({}, {
+                s3Bucket: 'file-bucket-01',
+                thumbWidth: 300,
+                maxFileSize: 20*1024*1024,   // upload limits, bytes
+                uploadDir: '/tmp'
+            })
+        });
+        if(config) CONFIG_FIELDS.forEach( attr => this.setConfig(attr, config[attr]) );
 
         this.FileModel = FileModel;
-        if(config.thumbWidth !== undefined) this.FileModel.config.thumbWidth = config.thumbWidth;
+        this.FileModel.config.thumbWidth = this._config.thumbWidth;
 
+    }
+
+    /**
+     * Get config value of internal _config object
+     * @param attr
+     */
+    getConfig(attr){
+        return this._config[attr];
+    }
+
+    /**
+     * Set config value of internal _config object
+     * @param attr
+     * @param val
+     */
+    setConfig(attr, val){
+        if(CONFIG_FIELDS.indexOf(attr) >= 0) this._config[attr] = val;
+        return this._config[attr];
     }
 
     /**
@@ -50,18 +74,14 @@ class FileService {
 
             // prepare and upload one file
             let f = req.files[0];
-            f.mimeType = f.mimetype;
-            delete f.mimetype;
-            f.type = f.mimeType.split('/')[0];
-            if(['text', 'audio', 'video', 'image'].indexOf(f.type) < 0) f.type = 'file';
 
             let fileObj = yield self.upload(f);
 
             // create thumb if image
-            if(fileObj.obj.type === 'image'){
+            if(fileObj.type === 'image'){
                 const thumbFile = yield fileObj.createThumb();
                 const thumbObj = yield self.upload(thumbFile);
-                fileObj.obj.thumbFile = thumbObj.toJSON();
+                fileObj.thumbFile = thumbObj.toJSON();
                 yield fileObj.buildImageMetadata();
             }
 
@@ -73,7 +93,7 @@ class FileService {
 
 
     /**
-     * Create public S3 file
+     * Upload a file to AWS S3 and create public URL
      * @param {Object} file JSON object
      * @param {String} file.path
      * @param {String} file.filename
@@ -84,7 +104,7 @@ class FileService {
         const fBuffer = yield _p(fs.readFile)(fs, file.path); 
 
         const params = {
-            Bucket: this.config.s3Bucket,
+            Bucket: this.getConfig('s3Bucket'),
             Key: file.filename,
             ACL: 'public-read',
             ContentType: file.mimeType,
@@ -96,7 +116,7 @@ class FileService {
 
         yield _p(s3.putObject)(s3, params);
 
-        file.url = `${s3.endpoint.protocol}\/\/${this.config.s3Bucket}.${s3.endpoint.hostname}\/${file.filename}`;
+        file.url = `${s3.endpoint.protocol}\/\/${this.getConfig('s3Bucket')}.${s3.endpoint.hostname}\/${file.filename}`;
 
         return this.FileModel.create(file);
     }

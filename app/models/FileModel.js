@@ -4,6 +4,8 @@ const fs = require('fs');
 const lwip = require('lwip');
 const fileType = require('file-type');
 
+const CONFIG_FIELDS = ['thumbWidth'];
+
 /**
  * File class with few image processing functions
  */
@@ -14,13 +16,14 @@ class FileModel {
      * @param {Object} file JSON object
      * @param {String} file.path
      * @param {String} file.filename
+     * @param {String} file.url
+     *
      * @param {String} file.mimeType
      * @param {String} file.type One of 'text', 'audio', 'video', 'image'
      * @param {String} file.destination
      * @param {Number} file.width For image file.
      * @param {Number} file.height For image file.
      * @param {Number} file.size
-     * @param {String} file.url
      */
     constructor(file){
         if(!file) throw new Error('Empty params');
@@ -33,21 +36,41 @@ class FileModel {
         this.path = file.path;
         this.filename = file.filename;
         this.mimeType = this.constructor.mimeType(`${file.path}/${file.filename}`);
+        this.type = this.mimeType.split('/')[0];
+        if(['text', 'audio', 'video', 'image'].indexOf(this.type) < 0) this.type = 'file';
+
+        this.url = file.url;
 
         /** inherit from static config if not set */
-        Object.defineProperty(this, 'config', {
+        Object.defineProperty(this, '_config', {
             value: Object.assign( {}, this.constructor.config)
         });
 
-        this.obj = file;
+    }
 
+    /**
+     * Get config value of internal _config object
+     * @param attr
+     */
+    getConfig(attr){
+        return this._config[attr];
+    }
+
+    /**
+     * Set config value of internal _config object
+     * @param attr
+     * @param val
+     */
+    setConfig(attr, val){
+        if(CONFIG_FIELDS.indexOf(attr) >= 0) this._config[attr] = val;
+        return this._config[attr];
     }
 
     /**
      * @return {Object} JSON object represent the file
      */
     toJSON(){
-        return this.obj;
+        return this;
     }
 
     /**
@@ -67,12 +90,12 @@ class FileModel {
      * @return {Object} Thumb image file JSON object
      */
     *createThumb(){
-        const thumbName = 'thumb-'+this.obj.filename.slice(0, this.obj.filename.lastIndexOf('.')+1)+'jpg';
-        const thumbPath = this.obj.destination+'/'+thumbName;
+        const thumbName = 'thumb-'+this.filename.slice(0, this.filename.lastIndexOf('.')+1)+'jpg';
+        const thumbPath = this.destination+'/'+thumbName;
 
         // scale
-        let image = yield _p(lwip.open)(lwip, this.obj.path);
-        const width = image.width() > this.config.thumbWidth ? this.config.thumbWidth : image.width();
+        let image = yield _p(lwip.open)(lwip, this.path);
+        const width = image.width() > this.getConfig('thumbWidth') ? this.getConfig('thumbWidth') : image.width();
         const scale = width / image.width();
         const height = parseInt(image.height()*scale);
 

@@ -3,6 +3,11 @@
 const assert = require('chai').assert;
 const FileModel = require('./FileModel');
 
+const mockFile = {
+    path: '/tmp',
+    filename: 'z.jpg'
+};
+
 describe('FileModel', function(){
     describe('#construct', function(){
         it('shoule assert when either filename and path undefined', function(){
@@ -15,7 +20,7 @@ describe('FileModel', function(){
         });
 
         it('shoule be instance of FileModel', function(){
-            assert.instanceOf(FileModel.create({ filename: 'z.jpg', path: '/tmp'}), FileModel);
+            assert.instanceOf(FileModel.create(mockFile), FileModel);
         });
 
         it('shoule create mimeType text/plain and type text', function(){
@@ -39,7 +44,10 @@ describe('FileModel', function(){
         });
 
         it('shoule return valid attributes only', function(){
+            const file = FileModel.create(mockFile).toJSON();
+            assert.isObject(file);
 
+            assert.notProperty('_config');
         });
 
     });
